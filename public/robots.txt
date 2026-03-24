@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://fromageriealioui.tn/sitemap.xml

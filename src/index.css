@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: 'Playfair Display', serif;
+    --font-script: 'Dancing Script', cursive;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+    --radius: 1rem;
+  }
+
+  /* ===== THÈME JOUR — Refined Mediterranean ===== */
+  [data-theme="day"] {
+    --green-dark: 153 33% 15%;
+    --green-medium: 153 28% 25%;
+    --green-light: 153 22% 45%;
+    --amber: 37 65% 45%;
+    --amber-light: 37 75% 60%;
+    --cream: 36 40% 97%;
+    --cream-dark: 36 20% 90%;
+
+    --background: 36 40% 97%;
+    --foreground: 40 10% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 40 10% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 40 10% 12%;
+    --primary: 37 65% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 153 33% 15%;
+    --secondary-foreground: 36 40% 97%;
+    --muted: 36 15% 92%;
+    --muted-foreground: 40 8% 40%;
+    --accent: 37 75% 60%;
+    --accent-foreground: 40 10% 12%;
+    --destructive: 0 75% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 15% 88%;
+    --input: 36 15% 88%;
+    --ring: 153 33% 15%;
+
+    --bg-section-alt: 36 20% 94%;
+    --card-shadow: 0 10px 40px -10px rgba(27, 58, 45, 0.12), 0 5px 15px -5px rgba(27, 58, 45, 0.05);
+    --navbar-bg: rgba(255, 255, 255, 0.85);
+    --navbar-scrolled: rgba(27, 58, 45, 0.98);
+    --footer-bg: #0E1A15;
+    --hero-gradient: linear-gradient(135deg, #1B3A2D 0%, #0E1A15 100%);
+    --divider-fill: #1B3A2D;
+    --grain-opacity: 0.02;
+  }
+
+  /* ===== THÈME NUIT — High-End Obsidian & Gold ===== */
+  [data-theme="night"] {
+    --background: 160 25% 2%;
+    --foreground: 36 15% 92%;
+    --card: 160 20% 4%;
+    --card-foreground: 36 15% 92%;
+    --popover: 160 25% 3%;
+    --popover-foreground: 36 15% 92%;
+    --primary: 38 85% 55%;
+    --primary-foreground: 160 25% 2%;
+    --secondary: 153 35% 15%;
+    --secondary-foreground: 36 15% 92%;
+    --muted: 160 15% 8%;
+    --muted-foreground: 36 5% 60%;
+    --accent: 38 90% 65%;
+    --accent-foreground: 36 15% 92%;
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 15% 10%;
+    --input: 160 15% 10%;
+    --ring: 38 85% 55%;
+
+    --bg-section-alt: 160 20% 3%;
+    --card-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), 0 18px 36px -18px rgba(0, 0, 0, 0.9);
+    --navbar-bg: rgba(5, 8, 7, 0.82);
+    --navbar-scrolled: rgba(5, 8, 7, 0.96);
+    --footer-bg: #020403;
+    --hero-gradient: radial-gradient(circle at center, #0F1A16 0%, #020403 100%);
+    --divider-fill: #1B3A2D;
+    --grain-opacity: 0.06;
+  }
+
+  [data-theme="night"] body {
+    background: radial-gradient(circle at 50% -20%, #0F1A16 0%, #020403 100%);
+    background-attachment: fixed;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    line-height: 1.1;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.5);
+  border-radius: 10px;
+  border: 2px solid hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+/* Animations */
+@keyframes cta-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--primary), 0.4);
+  }
+
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 15px rgba(var(--primary), 0);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--primary), 0);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-script {
+    font-family: var(--font-script);
+  }
+
+  .font-body {
+    font-family: var(--font-body);
+  }
+
+  .glass-effect {
+    @apply bg-white/[0.03] backdrop-blur-2xl border border-white/10;
+    box-shadow: 0 1px 1px rgba(255, 255, 255, 0.05);
+    transition: all 0.4s var(--ease-out);
+  }
+
+  .glass-effect:hover {
+    @apply bg-white/[0.06] border-white/20 shadow-2xl;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+
+  .section-padding {
+    @apply py-24 md:py-32;
+  }
+
+  .container-tight {
+    @apply max-w-5xl mx-auto px-4 sm:px-6;
+  }
+
+  .img-hover {
+    @apply transition-transform duration-700 ease-out hover:scale-110;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+}
