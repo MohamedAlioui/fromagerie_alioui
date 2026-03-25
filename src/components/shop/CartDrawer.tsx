@@ -8,8 +8,14 @@ interface Props {
   onClose: () => void;
 }
 
+const FREE_DELIVERY_THRESHOLD = 100;
+const BASE_DELIVERY_FEE = 7;
+
 const CartDrawer = ({ open, onClose }: Props) => {
   const { items, removeItem, updateQuantity, totalItems, totalTND } = useCart();
+  const deliveryFee = totalTND >= FREE_DELIVERY_THRESHOLD ? 0 : BASE_DELIVERY_FEE;
+  const remaining = FREE_DELIVERY_THRESHOLD - totalTND;
+  const progress = Math.min((totalTND / FREE_DELIVERY_THRESHOLD) * 100, 100);
 
   return (
     <>
@@ -116,13 +122,32 @@ const CartDrawer = ({ open, onClose }: Props) => {
               <span style={{ color: 'hsl(var(--muted-foreground))' }}>Sous-total</span>
               <span className="font-bold" style={{ color: 'hsl(var(--foreground))' }}>{totalTND.toFixed(2)} TND</span>
             </div>
+            {/* Free delivery progress */}
+            <div className="rounded-xl px-3 py-2 flex flex-col gap-1.5"
+              style={{ background: deliveryFee === 0 ? '#f0fdf4' : 'hsl(var(--muted))', border: deliveryFee === 0 ? '1px solid #bbf7d0' : 'none' }}>
+              {deliveryFee === 0 ? (
+                <p className="text-xs font-bold text-emerald-700 text-center">🎉 Livraison gratuite !</p>
+              ) : (
+                <>
+                  <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    Plus que <span className="font-bold" style={{ color: 'hsl(var(--primary))' }}>{remaining.toFixed(2)} TND</span> pour la livraison gratuite
+                  </p>
+                  <div className="w-full h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: '#1B3A2D' }} />
+                  </div>
+                </>
+              )}
+            </div>
+
             <div className="flex justify-between text-sm">
               <span style={{ color: 'hsl(var(--muted-foreground))' }}>Livraison</span>
-              <span style={{ color: 'hsl(var(--muted-foreground))' }}>7,00 TND</span>
+              {deliveryFee === 0
+                ? <span className="font-bold text-emerald-600">Gratuite</span>
+                : <span style={{ color: 'hsl(var(--muted-foreground))' }}>{deliveryFee.toFixed(2)} TND</span>}
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-3" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}>
               <span>Total</span>
-              <span style={{ color: 'hsl(var(--primary))' }}>{(totalTND + 7).toFixed(2)} TND</span>
+              <span style={{ color: 'hsl(var(--primary))' }}>{(totalTND + deliveryFee).toFixed(2)} TND</span>
             </div>
             <Link
               to="/commande"
