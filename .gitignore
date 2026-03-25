@@ -25,6 +25,11 @@ dist-ssr
 
 .vercel
 
+# Environment variables — never commit secrets
+server/.env
+.env
+.env.local
+
 # Large media files — host on Cloudinary or similar CDN
 *.mov
 *.mp4
