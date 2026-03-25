@@ -55,14 +55,18 @@ export const createOrder = async (req, res, next) => {
 
 export const trackOrder = async (req, res, next) => {
   try {
-    const { orderNumber, email } = req.query;
-    if (!orderNumber || !email) return res.status(400).json({ error: 'Paramètres manquants' });
+    const { orderNumber, email, phone } = req.query;
+    if (!orderNumber || (!email && !phone)) return res.status(400).json({ error: 'Paramètres manquants' });
 
-    const order = await Order.findOne({
-      orderNumber,
-      'customer.email': { $regex: new RegExp(`^${email}$`, 'i') },
-    });
-    if (!order) return res.status(404).json({ error: 'Commande introuvable. Vérifiez le numéro et l\'email.' });
+    const query = { orderNumber };
+    if (phone) {
+      query['customer.phone'] = { $regex: new RegExp(phone.replace(/\s/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) };
+    } else {
+      query['customer.email'] = { $regex: new RegExp(`^${email}$`, 'i') };
+    }
+
+    const order = await Order.findOne(query);
+    if (!order) return res.status(404).json({ error: 'Commande introuvable. Vérifiez le numéro et le téléphone.' });
 
     res.json({
       orderNumber: order.orderNumber,
