@@ -5,10 +5,14 @@ import { useCart } from '@/context/CartContext';
 import QuantitySelector from '@/components/shop/QuantitySelector';
 
 const DELIVERY_FEE = 7;
+const FREE_DELIVERY_THRESHOLD = 100;
 
 const Panier = () => {
   const { items, removeItem, updateQuantity, totalTND } = useCart();
   const navigate = useNavigate();
+  const deliveryFee = totalTND >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+  const remaining = FREE_DELIVERY_THRESHOLD - totalTND;
+  const progress = Math.min((totalTND / FREE_DELIVERY_THRESHOLD) * 100, 100);
 
   if (items.length === 0) {
     return (
@@ -95,6 +99,23 @@ const Panier = () => {
             <h2 className="font-display text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
               Résumé
             </h2>
+            {/* Free delivery progress */}
+            <div className="rounded-xl p-3 flex flex-col gap-2"
+              style={{ background: deliveryFee === 0 ? '#f0fdf4' : 'hsl(var(--muted))', border: deliveryFee === 0 ? '1px solid #bbf7d0' : '1px solid transparent' }}>
+              {deliveryFee === 0 ? (
+                <p className="text-sm font-bold text-emerald-700 text-center">🎉 Livraison gratuite !</p>
+              ) : (
+                <>
+                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    Plus que <span className="font-bold" style={{ color: 'hsl(var(--primary))' }}>{remaining.toFixed(2)} TND</span> pour la livraison gratuite
+                  </p>
+                  <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: '#1B3A2D' }} />
+                  </div>
+                </>
+              )}
+            </div>
+
             <div className="flex flex-col gap-2">
               <div className="flex justify-between text-sm">
                 <span style={{ color: 'hsl(var(--muted-foreground))' }}>Sous-total</span>
@@ -102,12 +123,16 @@ const Panier = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span style={{ color: 'hsl(var(--muted-foreground))' }}>Livraison</span>
-                <span style={{ color: 'hsl(var(--foreground))' }}>{DELIVERY_FEE.toFixed(2)} TND</span>
+                {deliveryFee === 0 ? (
+                  <span className="font-bold text-emerald-600">Gratuite</span>
+                ) : (
+                  <span style={{ color: 'hsl(var(--foreground))' }}>{deliveryFee.toFixed(2)} TND</span>
+                )}
               </div>
               <div className="border-t pt-2 mt-1 flex justify-between font-bold text-lg"
                 style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}>
                 <span>Total</span>
-                <span style={{ color: 'hsl(var(--primary))' }}>{(totalTND + DELIVERY_FEE).toFixed(2)} TND</span>
+                <span style={{ color: 'hsl(var(--primary))' }}>{(totalTND + deliveryFee).toFixed(2)} TND</span>
               </div>
             </div>
             <button

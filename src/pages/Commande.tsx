@@ -8,7 +8,8 @@ import { useCart } from '@/context/CartContext';
 import { createOrder } from '@/api/orders';
 import type { Customer } from '@/types/shop';
 
-const DELIVERY_FEE = 7;
+const BASE_DELIVERY_FEE = 7;
+const FREE_DELIVERY_THRESHOLD = 100;
 
 const schema = z.object({
   fullName: z.string().min(3, 'Nom complet requis'),
@@ -32,6 +33,7 @@ const Commande = () => {
   });
 
   if (items.length === 0) return <Navigate to="/nos-fromages" replace />;
+  const deliveryFee = totalTND >= FREE_DELIVERY_THRESHOLD ? 0 : BASE_DELIVERY_FEE;
 
   const onSubmit = async (data: FormData) => {
     setSubmitting(true);
@@ -46,7 +48,7 @@ const Commande = () => {
           flavorLabel: i.flavorLabel,
           quantity: i.quantity,
         })),
-        deliveryFeeTND: DELIVERY_FEE,
+        deliveryFeeTND: deliveryFee,
       });
       clearCart();
       navigate(`/confirmation/${res.orderNumber}`, { state: res });
@@ -164,11 +166,13 @@ const Commande = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span style={{ color: 'hsl(var(--muted-foreground))' }}>Livraison</span>
-                <span style={{ color: 'hsl(var(--foreground))' }}>{DELIVERY_FEE.toFixed(2)} TND</span>
+                {deliveryFee === 0
+                  ? <span className="font-bold text-emerald-600">Gratuite 🎉</span>
+                  : <span style={{ color: 'hsl(var(--foreground))' }}>{deliveryFee.toFixed(2)} TND</span>}
               </div>
               <div className="flex justify-between font-bold text-lg">
                 <span style={{ color: 'hsl(var(--foreground))' }}>Total</span>
-                <span style={{ color: 'hsl(var(--primary))' }}>{(totalTND + DELIVERY_FEE).toFixed(2)} TND</span>
+                <span style={{ color: 'hsl(var(--primary))' }}>{(totalTND + deliveryFee).toFixed(2)} TND</span>
               </div>
             </div>
           </motion.div>
