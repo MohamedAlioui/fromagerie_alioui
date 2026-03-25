@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ShoppingCart, PackageSearch } from 'lucide-react';
+import { Menu, X, ShoppingCart } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useCart } from '@/context/CartContext';
 import CartDrawer from './shop/CartDrawer';
@@ -94,17 +94,6 @@ const Navbar = () => {
               Contactez-Nous
             </Link>
 
-            {/* Track order */}
-            <Link
-              to="/suivre-commande"
-              className="ml-2 flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors"
-              style={{ color: 'white' }}
-              title="Suivre ma commande"
-            >
-              <PackageSearch size={16} />
-              <span className="hidden lg:inline">Suivre</span>
-            </Link>
-
             {/* Cart icon */}
             <button
               onClick={() => setCartOpen(true)}
@@ -166,7 +155,7 @@ const Navbar = () => {
               style={{ background: 'var(--navbar-bg)', backdropFilter: 'blur(16px)' }}
             >
               <div className="container py-6 flex flex-col gap-1">
-                {[...navLinks, { label: 'Suivre ma commande', path: '/suivre-commande' }].map((link, i) => (
+                {navLinks.map((link, i) => (
                   <motion.div
                     key={link.path}
                     initial={{ opacity: 0, x: -12 }}

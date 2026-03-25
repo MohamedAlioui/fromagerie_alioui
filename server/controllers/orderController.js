@@ -55,32 +55,31 @@ export const createOrder = async (req, res, next) => {
 
 export const trackOrder = async (req, res, next) => {
   try {
-    const { orderNumber, email, phone } = req.query;
-    if (!orderNumber || (!email && !phone)) return res.status(400).json({ error: 'Paramètres manquants' });
+    const { phone } = req.query;
+    if (!phone) return res.status(400).json({ error: 'Numéro de téléphone requis' });
 
-    const query = { orderNumber };
-    if (phone) {
-      query['customer.phone'] = { $regex: new RegExp(phone.replace(/\s/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) };
-    } else {
-      query['customer.email'] = { $regex: new RegExp(`^${email}$`, 'i') };
-    }
+    const phoneClean = phone.replace(/\s/g, '');
+    const orders = await Order.find({
+      'customer.phone': { $regex: new RegExp(phoneClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) },
+    }).sort({ createdAt: -1 });
 
-    const order = await Order.findOne(query);
-    if (!order) return res.status(404).json({ error: 'Commande introuvable. Vérifiez le numéro et le téléphone.' });
+    if (!orders.length) return res.status(404).json({ error: 'Aucune commande trouvée pour ce numéro.' });
 
-    res.json({
-      orderNumber: order.orderNumber,
-      status: order.status,
-      createdAt: order.createdAt,
-      items: order.items,
-      totalTND: order.totalTND,
-      deliveryFeeTND: order.deliveryFeeTND,
-      grandTotalTND: order.grandTotalTND,
+    res.json(orders.map(o => ({
+      orderNumber: o.orderNumber,
+      status: o.status,
+      createdAt: o.createdAt,
+      items: o.items,
+      totalTND: o.totalTND,
+      deliveryFeeTND: o.deliveryFeeTND,
+      grandTotalTND: o.grandTotalTND,
       customer: {
-        fullName: order.customer.fullName,
-        city: order.customer.city,
+        fullName: o.customer.fullName,
+        city: o.customer.city,
+        address: o.customer.address,
+        phone: o.customer.phone,
       },
-    });
+    })));
   } catch (err) { next(err); }
 };
 

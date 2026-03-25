@@ -17,10 +17,8 @@ export interface CreateOrderResponse {
 export const createOrder = (payload: CreateOrderPayload) =>
   post<CreateOrderResponse>('/orders', payload);
 
-export const trackOrder = (orderNumber: string, contact: string, byPhone = false) =>
-  get<Partial<Order>>(
-    `/orders/track?orderNumber=${encodeURIComponent(orderNumber)}&${byPhone ? 'phone' : 'email'}=${encodeURIComponent(contact)}`
-  );
+export const trackByPhone = (phone: string) =>
+  get<Partial<Order>[]>(`/orders/track?phone=${encodeURIComponent(phone)}`);
 
 export const getAdminOrders = (status?: string) =>
   get<Order[]>(`/orders${status ? `?status=${status}` : ''}`);

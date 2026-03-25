@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Award, ShoppingCart, MapPin, Utensils, Star, Check, PackageSearch, Clock, CheckCircle, Package, Truck, Home, XCircle } from 'lucide-react';
-import { trackOrder } from '@/api/orders';
-import type { OrderStatus } from '@/types/shop';
+import { trackByPhone } from '@/api/orders';
+import type { Order, OrderStatus } from '@/types/shop';
 import { STATUS_STEPS, STATUS_LABELS } from '@/types/shop';
 import AnimatedSection from '../components/AnimatedSection';
 import SEO from '../components/SEO';
@@ -62,33 +62,95 @@ const STEP_ICONS: Record<string, React.ReactNode> = {
   livree:         <Home size={18} />,
 };
 
+const OrderCard = ({ order }: { order: Partial<Order> }) => {
+  const currentStepIndex = order.status ? STATUS_STEPS.indexOf(order.status as OrderStatus) : -1;
+  const isCancelled = order.status === 'annulee';
+  return (
+    <div className="p-5 rounded-2xl flex flex-col gap-4 border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <span className="font-bold text-sm" style={{ color: 'hsl(var(--primary))' }}>{order.orderNumber}</span>
+        <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          {order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-TN') : ''}
+        </span>
+      </div>
+
+      {/* Stepper */}
+      {isCancelled ? (
+        <div className="flex items-center gap-3 p-3 rounded-xl"
+          style={{ background: 'hsl(var(--destructive) / 0.08)', border: '1px solid hsl(var(--destructive) / 0.3)' }}>
+          <XCircle size={18} style={{ color: 'hsl(var(--destructive))' }} />
+          <span className="text-sm font-bold" style={{ color: 'hsl(var(--destructive))' }}>Commande annulée</span>
+        </div>
+      ) : (
+        <div className="relative flex justify-between">
+          <div className="absolute top-4 left-0 right-0 h-1 rounded-full" style={{ background: 'hsl(var(--muted))' }} />
+          <div className="absolute top-4 left-0 h-1 rounded-full transition-all duration-700"
+            style={{ background: 'hsl(var(--primary))', width: currentStepIndex >= 0 ? `${(currentStepIndex / (STATUS_STEPS.length - 1)) * 100}%` : '0%' }} />
+          {STATUS_STEPS.map((step, i) => {
+            const done = i <= currentStepIndex;
+            return (
+              <div key={step} className="relative flex flex-col items-center gap-1.5 z-10">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all"
+                  style={{ background: done ? 'hsl(var(--primary))' : 'hsl(var(--card))', borderColor: done ? 'hsl(var(--primary))' : 'hsl(var(--border))', color: done ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))' }}>
+                  {STEP_ICONS[step]}
+                </div>
+                <span className="text-[10px] font-semibold text-center max-w-[52px] leading-tight"
+                  style={{ color: done ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}>
+                  {STATUS_LABELS[step]}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Items */}
+      <div className="flex flex-col gap-1 border-t pt-3" style={{ borderColor: 'hsl(var(--border))' }}>
+        {order.items?.map((item, i) => (
+          <div key={i} className="flex justify-between text-sm">
+            <span style={{ color: 'hsl(var(--foreground))' }}>
+              {item.productName} — {item.weightLabel} ×{item.quantity}
+            </span>
+            <span style={{ color: 'hsl(var(--muted-foreground))' }}>{item.subtotal.toFixed(2)} TND</span>
+          </div>
+        ))}
+        <div className="flex justify-between text-sm mt-1">
+          <span style={{ color: 'hsl(var(--muted-foreground))' }}>Livraison</span>
+          <span style={{ color: 'hsl(var(--muted-foreground))' }}>{order.deliveryFeeTND === 0 ? 'Gratuite' : `${order.deliveryFeeTND?.toFixed(2)} TND`}</span>
+        </div>
+        <div className="flex justify-between font-bold text-base mt-1">
+          <span style={{ color: 'hsl(var(--foreground))' }}>Total</span>
+          <span style={{ color: 'hsl(var(--primary))' }}>{order.grandTotalTND?.toFixed(2)} TND</span>
+        </div>
+      </div>
+
+      {/* Client info */}
+      <div className="text-xs flex gap-4 pt-1 border-t" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}>
+        <span>{order.customer?.fullName}</span>
+        <span>{order.customer?.city}</span>
+        <span>{order.customer?.address}</span>
+      </div>
+    </div>
+  );
+};
+
 const TrackSection = () => {
-  const [orderNumber, setOrderNumber] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [order, setOrder] = useState<Partial<import('@/types/shop').Order> | null>(null);
+  const [orders, setOrders] = useState<Partial<Order>[] | null>(null);
 
   const handleTrack = async () => {
-    if (!orderNumber.trim() || !phone.trim()) {
-      setError('Veuillez remplir le numéro de commande et le téléphone.');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    setOrder(null);
+    if (!phone.trim()) { setError('Veuillez entrer votre numéro de téléphone.'); return; }
+    setLoading(true); setError(''); setOrders(null);
     try {
-      const data = await trackOrder(orderNumber.trim(), phone.trim(), true);
-      setOrder(data);
+      const data = await trackByPhone(phone.trim());
+      setOrders(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Commande introuvable.');
-    } finally {
-      setLoading(false);
-    }
+      setError(err instanceof Error ? err.message : 'Aucune commande trouvée.');
+    } finally { setLoading(false); }
   };
-
-  const currentStepIndex = order?.status ? STATUS_STEPS.indexOf(order.status as OrderStatus) : -1;
-  const isCancelled = order?.status === 'annulee';
 
   return (
     <section className="py-16 md:py-24" style={{ background: 'hsl(var(--background))' }}>
@@ -100,114 +162,46 @@ const TrackSection = () => {
               <PackageSearch size={28} style={{ color: 'hsl(var(--primary))' }} />
             </div>
             <h2 className="font-display text-2xl md:text-3xl font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>
-              Suivre ma commande
+              Suivre mes commandes
             </h2>
             <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-              Entrez votre numéro de commande et votre téléphone
+              Entrez votre numéro de téléphone pour voir toutes vos commandes
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl flex flex-col gap-4"
+          <div className="p-6 rounded-2xl flex flex-col gap-4 mb-6"
             style={{ background: 'hsl(var(--card))', boxShadow: 'var(--card-shadow)' }}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold mb-1 uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  Numéro de commande
-                </label>
-                <input
-                  value={orderNumber}
-                  onChange={e => setOrderNumber(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleTrack()}
-                  placeholder="FA-2026-00001"
-                  className="w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  style={{ background: 'hsl(var(--input))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold mb-1 uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  Numéro de téléphone
-                </label>
-                <input
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleTrack()}
-                  placeholder="55 123 456"
-                  type="tel"
-                  className="w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  style={{ background: 'hsl(var(--input))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-bold mb-1 uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Numéro de téléphone
+              </label>
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleTrack()}
+                placeholder="55 123 456"
+                type="tel"
+                className="w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{ background: 'hsl(var(--input))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+              />
             </div>
-
             {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            <button
-              onClick={handleTrack}
-              disabled={loading}
+            <button onClick={handleTrack} disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm transition-all disabled:opacity-60"
-              style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
-            >
+              style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
               <PackageSearch size={16} />
-              {loading ? 'Recherche...' : 'Rechercher ma commande'}
+              {loading ? 'Recherche...' : 'Rechercher mes commandes'}
             </button>
-
-            {/* Result */}
-            {order && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 pt-2">
-                <div className="border-t pt-4" style={{ borderColor: 'hsl(var(--border))' }}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                      Commande {order.orderNumber}
-                    </span>
-                    <span className="text-xs font-bold" style={{ color: 'hsl(var(--foreground))' }}>
-                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-TN') : ''}
-                    </span>
-                  </div>
-
-                  {isCancelled ? (
-                    <div className="flex items-center gap-3 p-4 rounded-xl mt-3"
-                      style={{ background: 'hsl(var(--destructive) / 0.08)', border: '1px solid hsl(var(--destructive) / 0.3)' }}>
-                      <XCircle size={22} style={{ color: 'hsl(var(--destructive))' }} />
-                      <p className="text-sm font-bold" style={{ color: 'hsl(var(--destructive))' }}>Commande annulée</p>
-                    </div>
-                  ) : (
-                    <div className="relative flex justify-between mt-4">
-                      <div className="absolute top-4 left-0 right-0 h-1 rounded-full" style={{ background: 'hsl(var(--muted))' }} />
-                      <div className="absolute top-4 left-0 h-1 rounded-full transition-all duration-700"
-                        style={{
-                          background: 'hsl(var(--primary))',
-                          width: currentStepIndex >= 0 ? `${(currentStepIndex / (STATUS_STEPS.length - 1)) * 100}%` : '0%',
-                        }} />
-                      {STATUS_STEPS.map((step, i) => {
-                        const done = i <= currentStepIndex;
-                        return (
-                          <div key={step} className="relative flex flex-col items-center gap-1.5 z-10">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all"
-                              style={{
-                                background: done ? 'hsl(var(--primary))' : 'hsl(var(--card))',
-                                borderColor: done ? 'hsl(var(--primary))' : 'hsl(var(--border))',
-                                color: done ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))',
-                              }}>
-                              {STEP_ICONS[step]}
-                            </div>
-                            <span className="text-[10px] font-semibold text-center max-w-[52px] leading-tight"
-                              style={{ color: done ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}>
-                              {STATUS_LABELS[step]}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <div className="mt-5 flex justify-between font-bold text-base">
-                    <span style={{ color: 'hsl(var(--foreground))' }}>{order.customer?.fullName}</span>
-                    <span style={{ color: 'hsl(var(--primary))' }}>{order.grandTotalTND?.toFixed(2)} TND</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
           </div>
+
+          {orders && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                {orders.length} commande{orders.length > 1 ? 's' : ''} trouvée{orders.length > 1 ? 's' : ''}
+              </p>
+              {orders.map((o, i) => <OrderCard key={i} order={o} />)}
+            </motion.div>
+          )}
         </AnimatedSection>
       </div>
     </section>

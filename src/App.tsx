@@ -14,7 +14,6 @@ import NotFound from "./pages/NotFound";
 import Panier from "./pages/Panier";
 import Commande from "./pages/Commande";
 import ConfirmationCommande from "./pages/ConfirmationCommande";
-import SuivreCommande from "./pages/SuivreCommande";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -40,8 +39,7 @@ const AnimatedRoutes = () => {
         <Route path="/panier" element={<Panier />} />
         <Route path="/commande" element={<Commande />} />
         <Route path="/confirmation/:orderNumber" element={<ConfirmationCommande />} />
-        <Route path="/suivre-commande" element={<SuivreCommande />} />
-        <Route path="*" element={<NotFound />} />
+<Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
   );
